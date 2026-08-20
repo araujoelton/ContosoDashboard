@@ -32,18 +32,18 @@ validação independentes.
 
 **CRÍTICO**: Nenhuma história de usuário deve começar antes desta fase estar concluída.
 
-- [ ] T005 [P] Criar entidade Documento com validações em `ContosoDashboard/Models/Document.cs`
-- [ ] T006 [P] Criar entidade Compartilhamento de Documento em `ContosoDashboard/Models/DocumentShare.cs`
-- [ ] T007 [P] Criar entidade Atividade de Documento em `ContosoDashboard/Models/DocumentActivity.cs`
-- [ ] T008 Atualizar navegações de documentos em `ContosoDashboard/Models/User.cs`
-- [ ] T009 Atualizar navegações de documentos em `ContosoDashboard/Models/Project.cs`
-- [ ] T010 Atualizar navegações de documentos em `ContosoDashboard/Models/TaskItem.cs`
-- [ ] T011 Registrar DbSets, relacionamentos e índices de documentos em `ContosoDashboard/Data/ApplicationDbContext.cs`
-- [ ] T012 [P] Criar abstração e implementação local de armazenamento em `ContosoDashboard/Services/FileStorageService.cs`
-- [ ] T013 [P] Criar serviço de verificação de segurança simulada em `ContosoDashboard/Services/DocumentSecurityScanService.cs`
-- [ ] T014 Criar interface e esqueleto do serviço de documentos em `ContosoDashboard/Services/DocumentService.cs`
-- [ ] T015 Registrar serviços de documentos, armazenamento, verificação simulada e controllers em `ContosoDashboard/Program.cs`
-- [ ] T016 Atualizar tipos de notificação para documentos em `ContosoDashboard/Models/Notification.cs`
+- [X] T005 [P] Criar entidade Documento com validações em `ContosoDashboard/Models/Document.cs`
+- [X] T006 [P] Criar entidade Compartilhamento de Documento em `ContosoDashboard/Models/DocumentShare.cs`
+- [X] T007 [P] Criar entidade Atividade de Documento em `ContosoDashboard/Models/DocumentActivity.cs`
+- [X] T008 Atualizar navegações de documentos em `ContosoDashboard/Models/User.cs`
+- [X] T009 Atualizar navegações de documentos em `ContosoDashboard/Models/Project.cs`
+- [X] T010 Atualizar navegações de documentos em `ContosoDashboard/Models/TaskItem.cs`
+- [X] T011 Registrar DbSets, relacionamentos e índices de documentos em `ContosoDashboard/Data/ApplicationDbContext.cs`
+- [X] T012 [P] Criar abstração e implementação local de armazenamento em `ContosoDashboard/Services/FileStorageService.cs`
+- [X] T013 [P] Criar serviço de verificação de segurança simulada em `ContosoDashboard/Services/DocumentSecurityScanService.cs`
+- [X] T014 Criar interface e esqueleto do serviço de documentos em `ContosoDashboard/Services/DocumentService.cs`
+- [X] T015 Registrar serviços de documentos, armazenamento, verificação simulada e controllers em `ContosoDashboard/Program.cs`
+- [X] T016 Atualizar tipos de notificação para documentos em `ContosoDashboard/Models/Notification.cs`
 
 **Checkpoint**: Fundação pronta; as histórias de usuário podem ser implementadas em ordem de prioridade.
 
