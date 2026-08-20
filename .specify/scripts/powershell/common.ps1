@@ -93,6 +93,10 @@ function Get-FeatureDir {
 }
 
 function Get-FeaturePathsEnv {
+    param(
+        [switch]$ReturnNullOnError
+    )
+
     $repoRoot = Get-RepoRoot
     $currentBranch = Get-CurrentBranch
     $hasGit = Test-HasGit
@@ -111,6 +115,45 @@ function Get-FeaturePathsEnv {
         QUICKSTART    = Join-Path $featureDir 'quickstart.md'
         CONTRACTS_DIR = Join-Path $featureDir 'contracts'
     }
+}
+
+function Resolve-Template {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TemplateName,
+        [Parameter(Mandatory = $true)]
+        [string]$RepoRoot
+    )
+
+    $candidatePaths = @(
+        (Join-Path $RepoRoot ".specify/templates/overrides/$TemplateName.md"),
+        (Join-Path $RepoRoot ".specify/templates/$TemplateName.md")
+    )
+
+    foreach ($candidate in $candidatePaths) {
+        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+            return $candidate
+        }
+    }
+
+    return $null
+}
+
+function Resolve-TemplateContent {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TemplateName,
+        [Parameter(Mandatory = $true)]
+        [string]$RepoRoot
+    )
+
+    $templatePath = Resolve-Template -TemplateName $TemplateName -RepoRoot $RepoRoot
+    if (-not $templatePath) {
+        return $null
+    }
+
+    $content = Get-Content -LiteralPath $templatePath -Raw
+    return [string]$content
 }
 
 function Test-FileExists {

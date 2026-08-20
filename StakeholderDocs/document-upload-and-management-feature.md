@@ -1,245 +1,288 @@
-# Document Upload and Management Feature - Requirements
+# Funcionalidade de Upload e Gerenciamento de Documentos - Requisitos
+
+## Visão Geral
+
+A Contoso Corporation precisa adicionar capacidades de upload e gerenciamento de documentos ao
+aplicativo ContosoDashboard. Essa funcionalidade permitirá que colaboradores enviem documentos de
+trabalho, organizem-nos por categoria e projeto, e compartilhem-nos com membros da equipe.
+
+## Necessidade de Negócio
+
+Atualmente, os colaboradores da Contoso armazenam documentos de trabalho em vários locais
+(unidades locais, anexos de e-mail, unidades compartilhadas), o que causa:
+
+- Dificuldade para localizar documentos importantes quando necessário
+- Riscos de segurança decorrentes do compartilhamento não controlado de documentos
+- Falta de visibilidade sobre quais documentos estão associados a projetos ou tarefas específicos
 
-## Overview
+A funcionalidade de upload e gerenciamento de documentos resolve esses problemas ao fornecer um
+local centralizado e seguro para documentos de trabalho dentro do aplicativo de dashboard que os
+colaboradores já usam diariamente.
+
+## Usuários-Alvo
+
+Todos os colaboradores da Contoso que usam o aplicativo ContosoDashboard terão acesso às
+funcionalidades de gerenciamento de documentos, com permissões baseadas em seus papéis existentes:
+
+- **Colaboradores**: Enviar documentos pessoais e documentos de projetos aos quais estão atribuídos
+- **Líderes de Equipe**: Enviar documentos e visualizar/gerenciar documentos enviados por membros
+  de sua equipe
+- **Gerentes de Projeto**: Enviar documentos e gerenciar todos os documentos associados a seus
+  projetos
+- **Administradores**: Acesso completo a todos os documentos para fins de auditoria e conformidade
 
-Contoso Corporation needs to add document upload and management capabilities to the ContosoDashboard application. This feature will enable employees to upload work-related documents, organize them by category and project, and share them with team members.
+## Requisitos Principais
 
-## Business Need
+### 1. Upload de Documentos
 
-Currently, Contoso employees store work documents in various locations (local drives, email attachments, shared drives), leading to:
+**Seleção e Upload de Arquivos**
 
-- Difficulty locating important documents when needed
-- Security risks from uncontrolled document sharing
-- Lack of visibility into which documents are associated with specific projects or tasks
+- Usuários devem poder selecionar um ou mais arquivos de seu computador para upload
+- Tipos de arquivo compatíveis: PDF, documentos do Microsoft Office (Word, Excel, PowerPoint),
+  arquivos de texto e imagens (JPEG, PNG)
+- Tamanho máximo do arquivo: 25 MB por arquivo
+- Usuários devem ver um indicador de progresso durante o upload
+- O sistema deve exibir mensagens de sucesso ou erro após a conclusão do upload
 
-The document upload and management feature addresses these issues by providing a centralized, secure location for work-related documents within the dashboard application that employees already use daily.
+**Metadados do Documento**
 
-## Target Users
+- Ao fazer upload, os usuários devem informar:
+  - Título do documento (obrigatório)
+  - Descrição (opcional)
+  - Seleção de categoria a partir de lista predefinida (obrigatória): Documentos de Projeto,
+    Recursos da Equipe, Arquivos Pessoais, Relatórios, Apresentações, Outros
+  - Projeto associado (opcional, se o documento estiver relacionado a um projeto específico)
+  - Tags para facilitar a busca (opcional; usuários podem adicionar tags personalizadas)
+- O sistema deve capturar automaticamente:
+  - Data e hora do upload
+  - Enviado por (nome do usuário)
+  - Tamanho do arquivo
+  - Tipo do arquivo (tipo MIME, por exemplo, "application/pdf"; o campo deve acomodar
+    255 caracteres para documentos Office)
 
-All Contoso employees who use the ContosoDashboard application will have access to document management features, with permissions based on their existing roles:
+**Validação e Segurança**
 
-- **Employees**: Upload personal documents and documents for projects they're assigned to
-- **Team Leads**: Upload documents and view/manage documents uploaded by their team members
-- **Project Managers**: Upload documents and manage all documents associated with their projects
-- **Administrators**: Full access to all documents for audit and compliance purposes
+- O sistema deve verificar arquivos enviados contra vírus e malware antes do armazenamento
+- O sistema deve rejeitar arquivos que excedam os limites de tamanho com mensagens de erro claras
+- O sistema deve rejeitar tipos de arquivo não compatíveis
+- Arquivos enviados devem ser armazenados com segurança e controles de acesso apropriados
 
-## Core Requirements
+**Notas de Implementação para Armazenamento Local de Arquivos**
 
-### 1. Document Upload
+**Padrão de Armazenamento Offline:**
 
-**File Selection and Upload**
+- Armazenar arquivos em um diretório dedicado fora de `wwwroot` por segurança
+  (por exemplo, `AppData/uploads`)
+- Gerar caminhos de arquivo únicos ANTES da inserção no banco de dados para evitar violações de
+  chave duplicada
+- Padrão recomendado: `{userId}/{projectId ou "personal"}/{uniqueId}.{extension}`, em que
+  `uniqueId` é um GUID
+- **Sequência de upload: Gerar caminho único -> Salvar arquivo em disco -> Salvar metadados no banco**
+- **Isso evita registros órfãos no banco de dados se o salvamento do arquivo falhar**
+- **Isso evita erros de chave duplicada causados por caminhos vazios ou não únicos**
 
-- Users must be able to select one or more files from their computer to upload
-- Supported file types: PDF, Microsoft Office documents (Word, Excel, PowerPoint), text files, and images (JPEG, PNG)
-- Maximum file size: 25 MB per file
-- Users should see a progress indicator during upload
-- System should display success or error messages after upload completes
+**Considerações de Segurança:**
 
-**Document Metadata**
+- Arquivos armazenados fora de `wwwroot` exigem endpoints de controller para servi-los
+  (permitindo verificações de autorização)
+- Validar extensões de arquivo contra uma lista permitida antes de salvar
+- Usar nomes de arquivo baseados em GUID para prevenir ataques de travessia de caminho
+- Nunca usar nomes de arquivo fornecidos pelo usuário diretamente em caminhos de arquivo
+- Implementar verificações de autorização no endpoint de download para impedir acesso não autorizado
 
-- When uploading, users must provide:
-  - Document title (required)
-  - Description (optional)
-  - Category selection from predefined list (required): Project Documents, Team Resources, Personal Files, Reports, Presentations, Other
-  - Associated project (optional - if the document relates to a specific project)
-  - Tags for easier searching (optional - users can add custom tags)
-- System should automatically capture:
-  - Upload date and time
-  - Uploaded by (user name)
-  - File size
-  - File type (MIME type, e.g., "application/pdf" - field must accommodate 255 characters for Office documents)
+**Design para Migração ao Azure:**
 
-**Validation and Security**
+- Criar a interface `IFileStorageService` com os métodos: `UploadAsync()`, `DeleteAsync()`,
+  `DownloadAsync()`, `GetUrlAsync()`
+- A implementação local (`LocalFileStorageService`) usa operações de `System.IO.File`
+- A futura implementação `AzureBlobStorageService` usará o SDK Azure.Storage.Blobs
+- O mesmo padrão de caminho funciona para nomes de blobs no Azure:
+  `{userId}/{projectId}/{guid}.{ext}`
+- Trocar implementações via configuração de injeção de dependência
+- Nenhuma mudança na lógica de negócio, interface de usuário ou esquema de banco de dados é
+  necessária para a migração
 
-- System must scan uploaded files for viruses and malware before storage
-- System must reject files that exceed size limits with clear error messages
-- System must reject unsupported file types
-- Uploaded files must be stored securely with appropriate access controls
+### 2. Organização e Navegação de Documentos
 
-**Implementation Notes for Local File Storage**
+**Visualização Meus Documentos**
 
-**Offline Storage Pattern:**
-- Store files in a dedicated directory outside `wwwroot` for security (e.g., `AppData/uploads`)
-- Generate unique file paths BEFORE database insertion to prevent duplicate key violations
-- Recommended pattern: `{userId}/{projectId or "personal"}/{uniqueId}.{extension}` where uniqueId is a GUID
-- **Upload sequence: Generate unique path → Save file to disk → Save metadata to database**
-- **This prevents orphaned database records if file save fails**
-- **This prevents duplicate key errors from empty or non-unique file paths**
+- Usuários devem poder visualizar uma lista de todos os documentos que enviaram
+- A visualização deve exibir: título do documento, categoria, data de upload, tamanho do arquivo e
+  projeto associado
+- Usuários devem poder ordenar documentos por: título, data de upload, categoria e tamanho do arquivo
+- Usuários devem poder filtrar documentos por: categoria, projeto associado e intervalo de datas
 
-**Security Considerations:**
-- Files stored outside `wwwroot` require controller endpoints to serve them (enables authorization checks)
-- Validate file extensions against whitelist before saving
-- Use GUID-based filenames to prevent path traversal attacks
-- Never use user-supplied filenames directly in file paths
-- Implement authorization checks in download endpoint to prevent unauthorized access
+**Visualização de Documentos do Projeto**
 
-**Azure Migration Design:**
-- Create `IFileStorageService` interface with methods: `UploadAsync()`, `DeleteAsync()`, `DownloadAsync()`, `GetUrlAsync()`
-- Local implementation (`LocalFileStorageService`) uses `System.IO.File` operations
-- Future `AzureBlobStorageService` implementation will use Azure.Storage.Blobs SDK
-- Same path pattern works for Azure blob names: `{userId}/{projectId}/{guid}.{ext}`
-- Swap implementations via dependency injection configuration
-- No changes to business logic, UI, or database schema required for migration
+- Ao visualizar um projeto específico, usuários devem ver todos os documentos associados a esse
+  projeto
+- Todos os membros da equipe do projeto devem poder visualizar e baixar documentos do projeto
+- Gerentes de Projeto devem poder enviar documentos para seus projetos
 
-### 2. Document Organization and Browsing
+**Busca**
 
-**My Documents View**
+- Usuários devem poder buscar documentos por: título, descrição, tags, nome de quem enviou e projeto
+  associado
+- A busca deve retornar resultados em até 2 segundos
+- Usuários devem ver nos resultados apenas documentos que tenham permissão para acessar
 
-- Users must be able to view a list of all documents they have uploaded
-- The view should display: document title, category, upload date, file size, associated project
-- Users should be able to sort documents by: title, upload date, category, file size
-- Users should be able to filter documents by: category, associated project, date range
+### 3. Acesso e Gerenciamento de Documentos
 
-**Project Documents View**
+**Download e Pré-visualização**
 
-- When viewing a specific project, users should see all documents associated with that project
-- All project team members should be able to view and download project documents
-- Project Managers should be able to upload documents to their projects
+- Usuários devem poder baixar qualquer documento ao qual tenham acesso
+- Para tipos de arquivo comuns (PDF, imagens), usuários devem poder pré-visualizar documentos no
+  navegador sem baixá-los
 
-**Search**
+**Edição de Metadados**
 
-- Users should be able to search for documents by: title, description, tags, uploader name, associated project
-- Search should return results within 2 seconds
-- Users should only see documents they have permission to access in search results
+- Usuários que enviaram um documento devem poder editar os metadados do documento
+  (título, descrição, categoria, tags)
+- Usuários devem poder substituir um arquivo de documento por uma versão atualizada
 
-### 3. Document Access and Management
+**Exclusão de Documentos**
 
-**Download and Preview**
+- Usuários devem poder excluir documentos que enviaram
+- Gerentes de Projeto podem excluir qualquer documento em seus projetos
+- Documentos excluídos devem ser removidos permanentemente após confirmação do usuário
 
-- Users must be able to download any document they have access to
-- For common file types (PDF, images), users should be able to preview documents in the browser without downloading
+**Compartilhamento de Documentos**
 
-**Edit Metadata**
+- Proprietários de documentos devem poder compartilhar documentos com usuários ou equipes específicos
+- Usuários que receberem documentos compartilhados devem ser notificados por notificação no aplicativo
+- Documentos compartilhados devem aparecer na seção "Compartilhados Comigo" dos destinatários
 
-- Users who uploaded a document should be able to edit the document metadata (title, description, category, tags)
-- Users should be able to replace a document file with an updated version
+### 4. Integração com Funcionalidades Existentes
 
-**Delete Documents**
+**Integração com Tarefas**
 
-- Users should be able to delete documents they uploaded
-- Project Managers can delete any document in their projects
-- Deleted documents should be permanently removed after user confirmation
+- Ao visualizar uma tarefa, usuários devem poder ver e anexar documentos relacionados
+- Usuários devem poder enviar um documento diretamente a partir de uma página de detalhes da tarefa
+- Documentos anexados a tarefas devem ser automaticamente associados ao projeto da tarefa
 
-**Share Documents**
+**Integração com o Dashboard**
 
-- Document owners should be able to share documents with specific users or teams
-- Users who receive shared documents should be notified via in-app notification
-- Shared documents should appear in recipients' "Shared with Me" section
+- Adicionar um widget "Documentos Recentes" à página inicial do dashboard mostrando os últimos
+  5 documentos enviados pelo usuário
+- Adicionar contagem de documentos aos cards de resumo do dashboard
 
-### 4. Integration with Existing Features
+**Notificações**
 
-**Task Integration**
+- Usuários devem receber notificações quando alguém compartilhar um documento com eles
+- Usuários devem receber notificações quando um novo documento for adicionado a um de seus projetos
 
-- When viewing a task, users should be able to see and attach related documents
-- Users should be able to upload a document directly from a task detail page
-- Documents attached to tasks should automatically be associated with the task's project
+### 5. Requisitos de Performance
 
-**Dashboard Integration**
+- O upload de documentos deve ser concluído em até 30 segundos para arquivos de até 25 MB
+  (em uma rede típica)
+- Páginas de lista de documentos devem carregar em até 2 segundos para até 500 documentos
+- A busca de documentos deve retornar resultados em até 2 segundos
+- A pré-visualização de documentos deve carregar em até 3 segundos
 
-- Add a "Recent Documents" widget to the dashboard home page showing the last 5 documents uploaded by the user
-- Add document count to the dashboard summary cards
+### 6. Relatórios e Auditoria
 
-**Notifications**
+**Rastreamento de Atividades**
 
-- Users should receive notifications when someone shares a document with them
-- Users should receive notifications when a new document is added to one of their projects
+- O sistema deve registrar todas as atividades relacionadas a documentos: uploads, downloads,
+  exclusões e ações de compartilhamento
+- Administradores devem poder gerar relatórios mostrando:
+  - Tipos de documento mais enviados
+  - Usuários que mais fazem upload
+  - Padrões de acesso a documentos
 
-### 5. Performance Requirements
+## Objetivos de Experiência do Usuário
 
-- Document upload should complete within 30 seconds for files up to 25 MB (on typical network)
-- Document list pages should load within 2 seconds for up to 500 documents
-- Document search should return results within 2 seconds
-- Document preview should load within 3 seconds
+- **Simplicidade**: Enviar um documento deve exigir no máximo 3 cliques
+- **Velocidade**: Operações comuns (upload, download, busca) devem parecer instantâneas
+- **Clareza**: Usuários devem sempre saber o que acontece com os arquivos enviados
+- **Confiança**: Usuários devem confiar que seus documentos estão seguros e não serão perdidos
 
-### 6. Reporting and Audit
+## Métricas de Sucesso
 
-**Activity Tracking**
+A funcionalidade será considerada bem-sucedida se, em até 3 meses após o lançamento:
 
-- System should log all document-related activities: uploads, downloads, deletions, share actions
-- Administrators should be able to generate reports showing:
-  - Most uploaded document types
-  - Most active uploaders
-  - Document access patterns
+- 70% dos usuários ativos do dashboard tiverem enviado pelo menos um documento
+- O tempo médio para localizar um documento for reduzido para menos de 30 segundos
+- 90% dos documentos enviados estiverem corretamente categorizados
+- Ocorrerem zero incidentes de segurança relacionados ao acesso a documentos
 
-## User Experience Goals
+## Restrições Técnicas
 
-- **Simplicity**: Uploading a document should require no more than 3 clicks
-- **Speed**: Common operations (upload, download, search) should feel instant
-- **Clarity**: Users should always know what happens to uploaded files
-- **Confidence**: Users should trust that their documents are secure and won't be lost
+- Deve funcionar **offline, sem serviços em nuvem**, para fins de treinamento
+- Deve usar **armazenamento no sistema de arquivos local** para documentos enviados
+- Deve implementar **abstrações por interface** (`IFileStorageService`) para futura migração
+  para nuvem
+- Deve funcionar dentro da arquitetura atual da aplicação (sem grandes reescritas)
+- Deve estar em conformidade com o sistema atual de autenticação simulada
+- Cronograma de desenvolvimento: a funcionalidade deve estar pronta para produção em 8 a 10 semanas
+- **Banco de dados: DocumentId deve ser inteiro (não GUID) para consistência com as chaves
+  existentes de User/Project**
+- **Banco de dados: Category deve armazenar valores de texto (não enum inteiro) para simplicidade**
 
-## Success Metrics
+## Abordagem de Implementação
 
-The feature will be considered successful if, within 3 months of launch:
+A funcionalidade de gerenciamento de documentos é construída usando uma **arquitetura em camadas**
+que separa responsabilidades e permite futura migração para a nuvem:
 
-- 70% of active dashboard users have uploaded at least one document
-- Average time to locate a document is reduced to under 30 seconds
-- 90% of uploaded documents are properly categorized
-- Zero security incidents related to document access
+**Camada de Dados:**
 
-## Technical Constraints
+- A entidade Document armazena metadados (título, categoria, nome do arquivo, caminho do arquivo,
+  data de upload, usuário que enviou)
+- DocumentId usa chaves inteiras (consistentes com as tabelas User e Project existentes)
+- Category armazena valores de texto ("Documentos de Projeto", "Arquivos Pessoais" etc.) para
+  simplicidade
+- O campo FileType acomoda tipos MIME longos (255 caracteres para documentos Office)
+- FilePath acomoda nomes de arquivo baseados em GUID por segurança (prevenindo ataques de travessia
+  de caminho)
+- A entidade DocumentShare rastreia relações de compartilhamento entre usuários
 
-- Must work **offline without cloud services** for training purposes
-- Must use **local filesystem storage** for uploaded documents
-- Must implement **interface abstractions** (`IFileStorageService`) for future cloud migration
-- Must work within current application architecture (no major rewrites)
-- Must comply with existing mock authentication system
-- Development timeline: Feature should be production-ready within 8-10 weeks
-- **Database: DocumentId must be integer (not GUID) for consistency with existing User/Project keys**
-- **Database: Category must store text values (not integer enum) for simplicity**
+**Camada de Armazenamento:**
 
-## Implementation Approach
+- Arquivos são armazenados fora de diretórios acessíveis pela web (requisito de segurança)
+- A interface IFileStorageService abstrai a implementação de armazenamento
+- LocalFileStorageService para treinamento (usa sistema de arquivos local)
+- Futuro: trocar para AzureBlobStorageService em produção (sem necessidade de alterações de código)
+- Organização de arquivos: `{userId}/{projectId ou "personal"}/{guid}.{extension}`
 
-The document management feature is built using a **layered architecture** that separates concerns and enables future cloud migration:
+**Camada de Lógica de Negócio:**
 
-**Data Layer:**
-- Document entity stores metadata (title, category, filename, file path, upload date, uploader)
-- DocumentId uses integer keys (consistent with existing User and Project tables)
-- Category stores text values ("Project Documents", "Personal Files", etc.) for simplicity
-- FileType field accommodates long MIME types (255 characters for Office documents)
-- FilePath accommodates GUID-based filenames for security (prevents path traversal attacks)
-- DocumentShare entity tracks sharing relationships between users
+- DocumentService orquestra o fluxo de upload:
+  1. Validar arquivo (limite de tamanho, lista permitida de extensões)
+  2. Autorizar usuário (participação no projeto, se o upload for para um projeto)
+  3. Gerar nome de arquivo único baseado em GUID
+  4. Salvar arquivo em disco
+  5. Criar registro no banco de dados com caminho do arquivo
+  6. Enviar notificações aos membros do projeto
+- Verificações de autorização impedem acesso não autorizado a documentos (proteção contra IDOR)
+- A camada de serviços aplica todas as regras de segurança antes do acesso a dados
 
-**Storage Layer:**
-- Files stored outside web-accessible directories (security requirement)
-- IFileStorageService interface abstracts storage implementation
-- LocalFileStorageService for training (uses local filesystem)
-- Future: Swap to AzureBlobStorageService for production (no code changes needed)
-- File organization: `{userId}/{projectId or "personal"}/{guid}.{extension}`
+**Camada de Apresentação:**
 
-**Business Logic Layer:**
-- DocumentService orchestrates upload workflow:
-  1. Validate file (size limit, extension whitelist)
-  2. Authorize user (project membership if uploading to project)
-  3. Generate unique GUID-based filename
-  4. Save file to disk
-  5. Create database record with file path
-  6. Send notifications to project members
-- Authorization checks prevent unauthorized document access (IDOR protection)
-- Service layer enforces all security rules before data access
+- Página Blazor Server para upload e visualização de documentos
+- Upload de arquivos usa o padrão MemoryStream (evita problemas de descarte no Blazor)
+- Tabela responsiva exibe os documentos do usuário com metadados
+- Modal de upload valida entradas antes do envio
 
-**Presentation Layer:**
-- Blazor Server page for document upload and viewing
-- File upload uses MemoryStream pattern (prevents disposal issues in Blazor)
-- Responsive table displays user's documents with metadata
-- Upload modal validates input before submission
+Essa arquitetura garante segurança, manutenibilidade e prontidão para nuvem, mantendo a
+implementação de treinamento simples e capaz de funcionar offline.
 
-This architecture ensures security, maintainability, and cloud-readiness while keeping the training implementation simple and offline-capable.
+### Prontidão para Migração para a Nuvem
 
-### Cloud Migration Readiness
+Embora essa funcionalidade deva funcionar offline para treinamento, ela deve ser projetada para
+facilitar a migração para serviços Azure:
 
-While this feature must work offline for training, it should be designed for easy migration to Azure services:
+**Requisitos da Implementação Offline:**
 
-**Offline Implementation Requirements:**
-- Store files in local directory structure (e.g., `AppData/uploads/{userId}/{projectId}/{guid}.ext`)
-- Implement `LocalFileStorageService : IFileStorageService` using `System.IO` operations
-- File paths stored in database should be relative and portable
-- No Azure SDK dependencies in training implementation
+- Armazenar arquivos em estrutura de diretórios local
+  (por exemplo, `AppData/uploads/{userId}/{projectId}/{guid}.ext`)
+- Implementar `LocalFileStorageService : IFileStorageService` usando operações de `System.IO`
+- Caminhos de arquivo armazenados no banco de dados devem ser relativos e portáveis
+- Nenhuma dependência de SDK do Azure na implementação de treinamento
 
-**Azure Migration Design Pattern:**
+**Padrão de Design para Migração ao Azure:**
 
 ```csharp
-// Interface abstraction (implement in training version)
+// Abstração por interface (implementar na versão de treinamento)
 public interface IFileStorageService
 {
     Task<string> UploadAsync(Stream fileStream, string fileName, string contentType);
@@ -248,86 +291,102 @@ public interface IFileStorageService
     Task<string> GetUrlAsync(string filePath, TimeSpan expiration);
 }
 
-// Training: LocalFileStorageService implementation
-// Production: AzureBlobStorageService implementation
-// Switch via appsettings.json and dependency injection
+// Treinamento: implementação LocalFileStorageService
+// Produção: implementação AzureBlobStorageService
+// Alternar via appsettings.json e injeção de dependência
 ```
 
-**Migration Benefits:**
-- Swap service implementation without changing controllers, pages, or business logic
-- Database schema remains unchanged (FilePath column works for both local paths and blob names)
-- Configuration-driven deployment (dev = local, production = Azure)
-- Students learn industry-standard abstraction patterns
+**Benefícios da Migração:**
 
-### Blazor-Specific Implementation Requirements
+- Trocar a implementação do serviço sem alterar controllers, páginas ou lógica de negócio
+- O esquema do banco de dados permanece inalterado (a coluna FilePath funciona tanto para caminhos
+  locais quanto para nomes de blobs)
+- Implantação orientada por configuração (desenvolvimento = local, produção = Azure)
+- Participantes aprendem padrões de abstração usados na indústria
 
-**File Upload Component State Management**
+### Requisitos de Implementação Específicos do Blazor
 
-- Use `@key` attribute on `InputFile` component to force re-render after successful upload
-- Extract file metadata (name, size, contentType) into local variables BEFORE opening stream
-- Copy `IBrowserFile` stream to `MemoryStream` immediately to prevent disposal issues
-- Clear `IBrowserFile` reference (set to null) after copying stream to prevent reuse errors
-- Example pattern:
+**Gerenciamento de Estado do Componente de Upload de Arquivo**
+
+- Usar o atributo `@key` no componente `InputFile` para forçar nova renderização após upload
+  bem-sucedido
+- Extrair metadados do arquivo (nome, tamanho, contentType) para variáveis locais ANTES de abrir
+  o stream
+- Copiar o stream de `IBrowserFile` imediatamente para `MemoryStream` para evitar problemas de
+  descarte
+- Limpar a referência de `IBrowserFile` (definir como null) após copiar o stream para prevenir erros
+  de reutilização
+- Exemplo de padrão:
+
   ```csharp
   var fileName = SelectedFile.Name;
   var fileSize = SelectedFile.Size;
   var contentType = SelectedFile.ContentType;
-  
+
   using var memoryStream = new MemoryStream();
   using (var fileStream = SelectedFile.OpenReadStream(maxFileSize))
   {
       await fileStream.CopyToAsync(memoryStream);
   }
   memoryStream.Position = 0;
-  
-  SelectedFile = null; // Clear reference to prevent reuse
+
+  SelectedFile = null; // Limpar referência para prevenir reutilização
   StateHasChanged();
   ```
 
-**Authentication Claims**
+**Claims de Autenticação**
 
-- Ensure Login flow includes ALL required claims: NameIdentifier, Name, Email, Role, Department
-- Department claim is required for team-based authorization in document sharing
-- Missing claims will cause authorization failures in DocumentService methods
+- Garantir que o fluxo de login inclua TODAS as claims necessárias: NameIdentifier, Name, Email,
+  Role, Department
+- A claim Department é necessária para autorização baseada em equipe no compartilhamento de
+  documentos
+- Claims ausentes causarão falhas de autorização nos métodos de DocumentService
 
-### Database Setup Requirements
+### Requisitos de Configuração do Banco de Dados
 
-**Clean State for Testing:**
+**Estado Limpo para Testes:**
 
-- Before testing document upload for the first time, ensure clean database state
-- If previous upload attempts failed, drop and recreate database to remove orphaned records:
+- Antes de testar upload de documentos pela primeira vez, garantir um estado limpo do banco de dados
+- Se tentativas anteriores de upload falharam, excluir e recriar o banco para remover registros
+  órfãos:
+
   ```powershell
   sqllocaldb stop mssqllocaldb
   sqllocaldb delete mssqllocaldb
-  # Database will be recreated automatically on next run
+  # O banco de dados será recriado automaticamente na próxima execução
   ```
-- Orphaned records with empty FilePath values will cause duplicate key violations
-- For LocalDB: `dotnet ef database drop --force` also works if EF tools are installed
 
-## Assumptions
+- Registros órfãos com valores vazios em FilePath causarão violações de chave duplicada
+- Para LocalDB: `dotnet ef database drop --force` também funciona se as ferramentas EF estiverem
+  instaladas
 
-- Training environment has local disk storage available
-- Most documents will be under 10 MB in size
-- Users are familiar with basic file management concepts
-- Local filesystem storage is acceptable for training purposes
-- Cloud migration to Azure Blob Storage is planned for production deployment
-- Users may work offline (no internet connection required for core functionality)
+## Premissas
 
-## Out of Scope
+- O ambiente de treinamento possui armazenamento em disco local disponível
+- A maioria dos documentos terá menos de 10 MB
+- Usuários conhecem conceitos básicos de gerenciamento de arquivos
+- Armazenamento no sistema de arquivos local é aceitável para fins de treinamento
+- A migração para Azure Blob Storage está planejada para implantação em produção
+- Usuários podem trabalhar offline (nenhuma conexão com a internet é necessária para a
+  funcionalidade principal)
 
-The following features are NOT included in this initial release:
+## Fora do Escopo
 
-- Real-time collaborative editing of documents
-- Version history and rollback capabilities
-- Advanced document workflows (approval processes, document routing)
-- Integration with external systems (SharePoint, OneDrive)
-- Mobile app support (initial release is web-only)
-- Document templates or document generation features
-- Storage quotas and quota management
-- Soft delete/trash functionality with recovery
+As seguintes funcionalidades NÃO estão incluídas nesta versão inicial:
 
-These may be considered for future enhancements based on user feedback and business needs.
+- Edição colaborativa de documentos em tempo real
+- Histórico de versões e capacidade de rollback
+- Fluxos avançados de documentos (processos de aprovação, roteamento de documentos)
+- Integração com sistemas externos (SharePoint, OneDrive)
+- Suporte a aplicativo móvel (a versão inicial é apenas web)
+- Templates de documentos ou funcionalidades de geração de documentos
+- Cotas de armazenamento e gerenciamento de cotas
+- Exclusão lógica/lixeira com recuperação
 
-## Next Steps
+Essas funcionalidades poderão ser consideradas para melhorias futuras com base no feedback dos
+usuários e nas necessidades de negócio.
 
-Once approved, these requirements will be used to create detailed specifications using the Spec-Driven Development methodology with GitHub Spec Kit.
+## Próximos Passos
+
+Após aprovação, estes requisitos serão usados para criar especificações detalhadas usando a
+metodologia de Desenvolvimento Guiado por Especificação com GitHub Spec Kit.
