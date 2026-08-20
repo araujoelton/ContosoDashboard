@@ -100,7 +100,26 @@ function Get-FeaturePathsEnv {
     $repoRoot = Get-RepoRoot
     $currentBranch = Get-CurrentBranch
     $hasGit = Test-HasGit
-    $featureDir = Get-FeatureDir -RepoRoot $repoRoot -Branch $currentBranch
+    $featureDir = $null
+    $featureStatePath = Join-Path $repoRoot ".specify/feature.json"
+
+    if (Test-Path -LiteralPath $featureStatePath -PathType Leaf) {
+        try {
+            $featureState = Get-Content -LiteralPath $featureStatePath -Raw | ConvertFrom-Json
+            if ($featureState.feature_directory) {
+                $featureDir = Join-Path $repoRoot $featureState.feature_directory
+                $currentBranch = Split-Path -Leaf $featureDir
+            }
+        } catch {
+            if ($ReturnNullOnError) {
+                return $null
+            }
+        }
+    }
+
+    if (-not $featureDir) {
+        $featureDir = Get-FeatureDir -RepoRoot $repoRoot -Branch $currentBranch
+    }
     
     [PSCustomObject]@{
         REPO_ROOT     = $repoRoot

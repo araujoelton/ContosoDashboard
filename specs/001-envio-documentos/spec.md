@@ -5,6 +5,17 @@
 **Situação**: Rascunho
 **Entrada**: Descrição do usuário: "`--file StakeholderDocs/document-upload-and-management-feature.md`"
 
+## Clarificações
+
+### Sessão 2026-08-20
+
+- P: Como o compartilhamento com “equipes” deve determinar quem recebe acesso ao documento? -> R: Não permitir compartilhamento por equipe na versão inicial.
+- P: Se a verificação de segurança do arquivo não puder ser concluída, o sistema deve bloquear o envio? -> R: Bloquear o envio e mostrar erro claro.
+- P: Documentos associados a um projeto podem ser compartilhados com usuários que não são membros desse projeto? -> R: Não, apenas membros do projeto.
+- P: A contagem de documentos no painel deve contar quais documentos? -> R: Todos os documentos acessíveis ao usuário.
+- P: Em ambiente local e offline de treinamento, a verificação contra vírus e malware deve ser real ou simulada? -> R: Verificação simulada documentada.
+- P: Quando o usuário seleciona vários arquivos de uma vez, os metadados devem ser preenchidos individualmente para cada documento? -> R: Sim, título e categoria por arquivo.
+
 ## Cenários de Usuário e Testes *(obrigatório)*
 
 ### História de Usuário 1 - Enviar e classificar documentos (Prioridade: P1)
@@ -23,8 +34,9 @@ metadados corretos.
 **Cenários de aceitação**:
 
 1. **Dado** um usuário autenticado com permissão para enviar documentos, **quando** ele seleciona um
-   arquivo compatível de até 25 MB, informa título e categoria, e confirma o envio, **então** o
-   documento é salvo, aparece em "Meus Documentos" e exibe uma mensagem de sucesso.
+   ou mais arquivos compatíveis de até 25 MB cada, informa título e categoria para cada arquivo, e
+   confirma o envio, **então** cada documento é salvo, aparece em "Meus Documentos" e exibe uma
+   mensagem de sucesso.
 2. **Dado** um usuário autenticado, **quando** ele tenta enviar um arquivo sem título ou sem categoria,
    **então** o sistema bloqueia o envio e informa quais campos obrigatórios precisam ser preenchidos.
 3. **Dado** um usuário autenticado, **quando** ele tenta enviar um arquivo maior que 25 MB ou de tipo
@@ -62,8 +74,8 @@ apenas documentos permitidos.
 
 ### História de Usuário 3 - Compartilhar e receber documentos (Prioridade: P3)
 
-Como proprietário de um documento, quero compartilhá-lo com usuários ou equipes específicos, para
-que as pessoas certas sejam notificadas e consigam acessar o conteúdo compartilhado.
+Como proprietário de um documento, quero compartilhá-lo com usuários específicos, para que as pessoas
+certas sejam notificadas e consigam acessar o conteúdo compartilhado.
 
 **Por que esta prioridade**: Compartilhamento controlado reduz dependência de anexos de e-mail e
 unidades soltas, sem abrir acesso indiscriminado.
@@ -77,9 +89,9 @@ destinatários.
 1. **Dado** um usuário proprietário de um documento, **quando** ele compartilha o documento com um
    usuário específico, **então** o destinatário recebe notificação e vê o documento em
    "Compartilhados Comigo".
-2. **Dado** um documento compartilhado com uma equipe, **quando** membros dessa equipe acessam seus
-   documentos compartilhados, **então** o documento aparece para membros autorizados e não aparece
-   para usuários fora da equipe.
+2. **Dado** um documento de projeto, **quando** o proprietário tenta compartilhá-lo com um usuário
+   específico que é membro do mesmo projeto, **então** o destinatário recebe acesso ao documento
+   compartilhado.
 3. **Dado** um usuário sem permissão para um documento, **quando** ele tenta acessá-lo por busca, lista
    ou endereço direto, **então** o acesso é negado.
 
@@ -112,10 +124,14 @@ administradores.
 
 - Arquivo selecionado excede 25 MB.
 - Arquivo selecionado tem tipo não permitido ou conteúdo considerado inseguro.
+- Verificação de segurança do arquivo não pode ser concluída.
 - Envio é interrompido antes da conclusão.
 - Usuário tenta associar documento a um projeto do qual não participa.
 - Usuário tenta acessar documento removido, inexistente ou sem permissão.
 - Documento compartilhado com usuário que deixa de ter acesso ao projeto relacionado.
+- Usuário tenta compartilhar documento com uma equipe na versão inicial.
+- Usuário tenta compartilhar documento de projeto com alguém que não é membro do projeto.
+- Usuário seleciona vários arquivos, mas deixa título ou categoria ausente para um deles.
 - Busca retorna muitos resultados ou nenhum resultado.
 - Pré-visualização não está disponível para o tipo de arquivo solicitado.
 
@@ -129,12 +145,18 @@ administradores.
   e imagens JPEG ou PNG.
 - **FR-003**: O sistema DEVE limitar cada arquivo enviado a 25 MB.
 - **FR-004**: O sistema DEVE exigir título e categoria para cada documento enviado.
+- **FR-004a**: Quando vários arquivos forem selecionados no mesmo envio, o sistema DEVE exigir título
+  e categoria individualmente para cada arquivo.
 - **FR-005**: O sistema DEVE permitir descrição, projeto associado e tags como metadados opcionais.
 - **FR-006**: O sistema DEVE registrar automaticamente data e hora do envio, usuário responsável,
   tamanho do arquivo e tipo do arquivo.
 - **FR-007**: O sistema DEVE rejeitar envios inválidos com mensagens claras e acionáveis.
 - **FR-008**: O sistema DEVE verificar arquivos enviados contra ameaças antes de disponibilizá-los
   para outros usuários.
+- **FR-008b**: Em ambiente local e offline de treinamento, a verificação contra vírus e malware DEVE
+  ser simulada e documentada como não adequada para uso em produção.
+- **FR-008a**: O sistema DEVE bloquear o envio e mostrar erro claro quando a verificação de segurança
+  do arquivo não puder ser concluída.
 - **FR-009**: O sistema DEVE armazenar documentos de forma que somente usuários autorizados possam
   acessá-los.
 - **FR-010**: Usuários DEVEM conseguir visualizar a lista de documentos que enviaram.
@@ -160,8 +182,10 @@ administradores.
 - **FR-022**: Usuários DEVEM conseguir excluir documentos que enviaram após confirmação explícita.
 - **FR-023**: Gerentes de Projeto DEVEM conseguir excluir documentos associados aos projetos que
   gerenciam.
-- **FR-024**: Proprietários de documentos DEVEM conseguir compartilhar documentos com usuários ou
-  equipes específicos.
+- **FR-024**: Proprietários de documentos DEVEM conseguir compartilhar documentos com usuários
+  específicos.
+- **FR-024a**: Documentos associados a projeto DEVEM ser compartilháveis apenas com usuários que
+  sejam membros autorizados do mesmo projeto.
 - **FR-025**: Usuários que recebem documentos compartilhados DEVEM receber uma notificação no
   aplicativo.
 - **FR-026**: Documentos compartilhados DEVEM aparecer em uma seção "Compartilhados Comigo" para seus
@@ -170,7 +194,8 @@ administradores.
   quando tiverem permissão.
 - **FR-028**: Documentos anexados a tarefas DEVEM ser associados ao projeto da tarefa.
 - **FR-029**: O painel DEVE exibir os 5 documentos mais recentes enviados pelo usuário.
-- **FR-030**: O painel DEVE exibir uma contagem de documentos relevante para o usuário atual.
+- **FR-030**: O painel DEVE exibir a contagem total de documentos acessíveis ao usuário atual,
+  incluindo documentos próprios, documentos de projeto e documentos compartilhados com ele.
 - **FR-031**: Usuários DEVEM receber notificação quando um novo documento for adicionado a um projeto
   do qual participam.
 - **FR-032**: O sistema DEVE registrar atividades de envio, download, exclusão e compartilhamento de
@@ -187,8 +212,8 @@ administradores.
   opcionais com projeto ou tarefa.
 - **Categoria de Documento**: Classificação usada para organizar documentos, incluindo Documentos de
   Projeto, Recursos da Equipe, Arquivos Pessoais, Relatórios, Apresentações e Outros.
-- **Compartilhamento de Documento**: Representa a concessão de acesso de um documento a usuários ou
-  equipes específicos.
+- **Compartilhamento de Documento**: Representa a concessão de acesso de um documento a usuários
+  específicos.
 - **Atividade de Documento**: Representa um evento auditável relacionado a documentos, como envio,
   download, exclusão ou compartilhamento.
 - **Projeto Associado**: Projeto ao qual um documento pode estar vinculado para fins de organização,
@@ -223,7 +248,10 @@ administradores.
   líderes de equipe, gerentes de projeto e administradores.
 - Documentos pessoais são visíveis ao usuário que os enviou, salvo compartilhamento explícito.
 - Documentos associados a projeto são visíveis aos membros autorizados desse projeto.
+- Compartilhamentos de documentos de projeto não ampliam acesso para usuários fora do projeto.
 - A versão inicial não inclui edição colaborativa, histórico de versões, recuperação de exclusão,
-  integração com sistemas externos, aplicativo móvel, modelos de documentos ou cotas de
-  armazenamento.
+  integração com sistemas externos, aplicativo móvel, modelos de documentos, cotas de armazenamento
+  ou compartilhamento por equipe.
 - A experiência principal deve funcionar em ambiente de treinamento local e offline.
+- A verificação contra vírus e malware na versão de treinamento é simulada; produção exigirá controle
+  real equivalente antes de disponibilizar documentos.
