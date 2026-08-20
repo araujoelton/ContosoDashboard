@@ -19,10 +19,10 @@ validação independentes.
 
 **Objetivo**: Preparar configuração e estrutura local de armazenamento.
 
-- [ ] T001 Criar marcador de diretório de uploads local em `ContosoDashboard/AppData/uploads/.gitkeep`
-- [ ] T002 Configurar caminho base de armazenamento e limite de 25 MB em `ContosoDashboard/appsettings.json`
-- [ ] T003 [P] Criar arquivo de categorias permitidas em `ContosoDashboard/Models/DocumentCategory.cs`
-- [ ] T004 [P] Criar pasta de controllers para arquivos protegidos em `ContosoDashboard/Controllers/.gitkeep`
+- [X] T001 Criar marcador de diretório de uploads local em `ContosoDashboard/AppData/uploads/.gitkeep`
+- [X] T002 Configurar caminho base de armazenamento e limite de 25 MB em `ContosoDashboard/appsettings.json`
+- [X] T003 [P] Criar arquivo de categorias permitidas em `ContosoDashboard/Models/DocumentCategory.cs`
+- [X] T004 [P] Criar pasta de controllers para arquivos protegidos em `ContosoDashboard/Controllers/.gitkeep`
 
 ---
 
